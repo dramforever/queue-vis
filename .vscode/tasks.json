@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "webpack",
+            "group": "build"
+        },
+        {
+            "type": "npm",
+            "script": "webpack-watch",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
