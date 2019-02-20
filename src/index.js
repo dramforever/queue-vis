@@ -52,14 +52,26 @@ for (const value of [ 17, 30, 65, 92 ]) {
             direction: 'right'
         },
         get constraints() {
-            return [
-                {
-                    axis: 'x',
-                    left: lastNode,
-                    right: node,
-                    gap: 80
-                }
-            ]
+            const base = {
+                axis: 'x',
+                gap: 80
+            };
+            if (this.connector.direction == 'right')
+                return [
+                    {
+                        ... base,
+                        left: this.link.target,
+                        right: this.link.source,
+                    }
+                ];
+            else /* 'left' */
+                return [
+                    {
+                        ... base,
+                        left: this.link.source,
+                        right: this.link.target,
+                    }
+                ]
         }
     });
     store.set(node, {
