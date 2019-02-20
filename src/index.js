@@ -31,14 +31,18 @@ window.onresize = () => {
 
 window.onresize();
 
-let lastNode = store.push({
-    position: vec(0, 0),
-    node: {
-        label: '',
-        next: null,
-        junction: null
-    }
-});
+const nodes = [
+    store.push({
+        position: vec(0, 0),
+        node: {
+            label: '',
+            next: null,
+            junction: null
+        }
+    })
+];
+
+const conns = [];
 
 for (const value of [ 17, 30, 65, 92 ]) {
     const conn = store.reserve();
@@ -46,7 +50,7 @@ for (const value of [ 17, 30, 65, 92 ]) {
     store.set(conn, {
         link: {
             source: node,
-            target: lastNode
+            target: nodes[nodes.length - 1]
         },
         connector: {
             direction: 'right'
@@ -82,8 +86,12 @@ for (const value of [ 17, 30, 65, 92 ]) {
             junction: null
         }
     });
-    lastNode = node;
+    conns.push(conn);
+    nodes.push(node);
 }
+
+console.log(conns);
+console.log(nodes);
 
 view.render(store.entities)
 
@@ -100,7 +108,6 @@ const updateCola = () => {
         .start();
 
     const colaConstraints = store.entities.flatMap(d => d.constraints || []).map(d => {
-        console.log(d);
         if ('gap' in d)
             return {
                 ... d,
@@ -115,7 +122,7 @@ const updateCola = () => {
                     node: store.entities[u.node].position.index
                 }))
             }
-    }).map(d => (console.log(d), d))
+    });
 
     d3cola
         .constraints(colaConstraints)
