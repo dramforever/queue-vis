@@ -27,7 +27,7 @@ export class Vector {
     add(that) {
         return vec(this.x + that.x, this.y + that.y);
     }
-    
+
     sub(that) {
         return vec(this.x - that.x, this.y - that.y);
     }
