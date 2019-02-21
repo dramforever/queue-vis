@@ -123,19 +123,17 @@ export class View {
                 }
             }));
 
-        function getPath(d) {
-            const midpoint = d.pVis.p0.add(d.pVis.p1).muln(0.5);
-            return `M ${d.pVis.p0}
-                Q ${midpoint.add(vec(0, -1.5 * GAP))}
-                ${d.pVis.p1}`;
-        }
-
         this.dPointers = this.dPointers.data(pointers, d => d.id);
         this.dPointers.exit().remove();
 
         this.dPointers = this.dPointers
             .enter().append('path').attr('class', 'pointer')
             .merge(this.dPointers)
-            .attr('d', getPath);
+            .attr('d', d =>
+                `M ${d.pVis.p0}
+                C ${d.pVis.p0.add(vec(-GAP, -GAP))}
+                ${d.pVis.p1.add(vec(GAP, -GAP))}
+                ${d.pVis.p1}`
+            );
     }
 }
