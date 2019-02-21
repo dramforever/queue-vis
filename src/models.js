@@ -57,19 +57,19 @@ export function makeConnector(store, { source, target, direction }) {
 }
 
 export function checkMakeConnector(store, source, target, dir) {
-    return(target !== null) && makeConnector(store, {
+    return (target !== null) && makeConnector(store, {
         source, target, direction: dir
-    });
+    }) || null;
 }
 
 export function makeNode(store, { label, direction, next = null, r1 = null, r2 = null }) {
     const node = store.reserve();
     const nextConn = checkMakeConnector(store, node, next, direction);
-    const junction = (r1 !== null || r2 !== null) && store.reserve();
+    const junction = (r1 !== null || r2 !== null) && store.reserve() || null;
     const r1Conn = checkMakeConnector(store, junction, r1, 'right');
     const r2Conn = checkMakeConnector(store, junction, r2, 'left');
 
-    if (junction)
+    if (junction !== null)
         store.set(junction, {
             position: vec(600, 200),
             link: {
@@ -100,12 +100,12 @@ export function makeQueue(store, { l, r, s }) {
     const queue = store.reserve();
     const lConn = checkMakeConnector(store, queue, l, 'left');
     const rConn = checkMakeConnector(store, queue, r, 'right');
-    const sPtr = s && store.push({
+    const sPtr = (s !== null) && store.push({
         pointer: {
             source: queue,
             target: s
         }
-    });
+    }) || null;
     store.set(queue, {
         position: vec(300, 300),
         queue: {
@@ -115,3 +115,4 @@ export function makeQueue(store, { l, r, s }) {
         }
     });
 }
+
