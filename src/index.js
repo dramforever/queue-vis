@@ -1,8 +1,10 @@
 import * as d3 from 'd3';
+import * as cola from 'webcola';
+
 import { vec } from './vector';
 import { Store } from './store';
 import { View } from './view';
-import * as cola from 'webcola';
+import { makeNode, makeQueue } from './models';
 
 const d3cola = cola.d3adaptor(d3);
 
@@ -21,7 +23,6 @@ const store = new Store();
 
 d3cola
     .handleDisconnected(false)
-    .linkDistance(100)
     .on('tick', () => view.render(store.entities));
 
 window.onresize = () => {
@@ -31,83 +32,57 @@ window.onresize = () => {
 
 window.onresize();
 
-const nodes = [
-    store.push({
-        position: vec(0, 0),
-        node: {
-            label: '',
-            next: null,
-            junction: null
-        }
-    })
-];
+function arrayToList(values, direction, next = null) {
+    let prevNode = next;
 
-const conns = [];
+    function append(value) {
+        prevNode = makeNode(store, {
+            label: value,
+            direction,
+            next: prevNode
+        });
+    }
 
-for (const value of [ 17, 30, 65, 92 ]) {
-    const conn = store.reserve();
-    const node = store.reserve();
-    store.set(conn, {
-        link: {
-            source: node,
-            target: nodes[nodes.length - 1]
-        },
-        connector: {
-            direction: 'right'
-        },
-        get constraints() {
-            const base = {
-                axis: 'x',
-                gap: 80
-            };
-            if (this.connector.direction == 'right')
-                return [
-                    {
-                        ... base,
-                        left: this.link.target,
-                        right: this.link.source,
-                    }
-                ];
-            else /* 'left' */
-                return [
-                    {
-                        ... base,
-                        left: this.link.source,
-                        right: this.link.target,
-                    }
-                ]
-        }
-    });
-    store.set(node, {
-        position: vec(0, 0),
-        node: {
-            label: '',
-            next: conn,
-            junction: null
-        }
-    });
-    conns.push(conn);
-    nodes.push(node);
+    for (const value of values)
+        append(value);
+
+    return prevNode;
 }
 
-console.log(conns);
-console.log(nodes);
+const r1n = arrayToList([ 1, 2, 3 ], 'right');
+const r2n = arrayToList([ 7, 8, 9 ], 'left');
+
+const m = arrayToList([ 10, 20, 30 ], 'left');
+
+const q = makeNode(store, {
+    label: 'x',
+    direction: 'left',
+    next: m,
+    r1: r1n,
+    r2: r2n
+})
+
+const n = arrayToList([ 60, 70, 80 ], 'left', q)
+
+const p = arrayToList([ 33, 44, 55, 66 ], 'right')
+
+makeQueue(store, { l: n, r: p, s: q });
 
 view.render(store.entities)
 
-const colaNodes = store.entities.map(d => d.position).filter(d => d);
-const colaLinks = store.entities.filter(d => d.link).map(d => ({
-    source: store.entities[d.link.source].position,
-    target: store.entities[d.link.target].position
-}));
+function updateCola() {
+    const colaNodes = store.entities.map(d => d.position).filter(d => d);
+    const colaLinks = store.entities.filter(d => d.link).map(d => ({
+        source: store.entities[d.link.source].position,
+        target: store.entities[d.link.target].position
+    }));
 
-const updateCola = () => {
     d3cola
         .nodes(colaNodes)
         .links(colaLinks)
         .start();
 
-    const colaConstraints = store.entities.flatMap(d => d.constraints || []).map(d => {
+    const colaConstraints = store.entities.flatMap(d => d.getConstraints ? d.getConstraints() : []).map(d => {
         if ('gap' in d)
             return {
                 ... d,
@@ -130,3 +105,5 @@ const updateCola = () => {
 };
 
 updateCola();
+
+Object.assign(window, { store, updateCola, arrayToList })

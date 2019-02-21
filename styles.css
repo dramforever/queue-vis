@@ -33,10 +33,29 @@ svg {
 }
 
 .link-arrow-head {
-    marker-end: url(#end-arrow)
+    marker-end: url(#end-arrow);
 }
 
 #end-arrow {
     fill: none;
     stroke-width: 3px;
+}
+
+.junction {
+    stroke: black;
+    fill: transparent;
+    stroke-width: 2px;
+}
+
+.queue {
+    stroke: black;
+    fill: transparent;
+    stroke-width: 2px;
+}
+
+.pointer {
+    stroke: black;
+    fill: none;
+    stroke-width: 2px;
+    marker-end: url(#end-arrow);
 }

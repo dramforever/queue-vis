@@ -1,8 +1,9 @@
 import * as d3 from 'd3';
-import { RADIUS, HEADROOM } from "./consts";
-import * as cola from 'webcola';
 
-const chop = (v0, v1) => {
+import { RADIUS, HEADROOM, GAP } from "./consts";
+import { vec } from './vector';
+
+function chop(v0, v1) {
     const distance = 1.5 * RADIUS;
     const vec = v1.sub(v0), len = vec.len();
     return (len < 2 * distance
@@ -21,11 +22,17 @@ export class View {
         this.dNodeLabels = svg.append('g').selectAll('.node-label');
         this.dNodeBorders = svg.append('g').selectAll('.node-border');
         this.dLinks = svg.append('g').selectAll('.link');
+        this.dJunctions = svg.append('g').selectAll('.junction');
+        this.dQueues = svg.append('g').selectAll('.queue');
+        this.dPointers = svg.append('g').selectAll('.pointer');
     }
 
     render(entities) {
         this.renderNodes(entities);
         this.renderLinks(entities);
+        this.renderJunctions(entities);
+        this.renderQueues(entities);
+        this.renderPointers(entities);
     }
 
 
@@ -65,14 +72,70 @@ export class View {
             }))
             .filter(d => d.linkVis);
 
-        this.dLinks = this.dLinks
-            .data(links, d => d.id);
-        
+        this.dLinks = this.dLinks.data(links, d => d.id);
+
         this.dLinks.exit().remove();
         this.dLinks = this.dLinks
             .enter().append('path').attr('class', 'link')
             .merge(this.dLinks)
-            .classed('link-arrow-head', d => d.linkVis.arrowHead)
+            .classed('link-arrow-head', d => ! d.link.noArrow && d.linkVis.arrowHead)
             .attr('d', d => `M ${d.linkVis.p0} L ${d.linkVis.p1}`)
+    }
+
+    renderJunctions(entities) {
+        const junctions = entities.filter(d => d.junction);
+
+        this.dJunctions = this.dJunctions.data(junctions, d => d.id);
+        this.dJunctions.exit().remove();
+
+        const R = RADIUS;
+
+        this.dJunctions = this.dJunctions
+            .enter().append('path').attr('class', 'junction')
+            .call(this.dragHandler)
+            .merge(this.dJunctions)
+            .attr('d', d => `M ${d.position} m -20,0 l 20,-20 l 20,20 l -40,0`)
+    }
+
+    renderQueues(entities) {
+        const queues = entities.filter(d => d.queue);
+        this.dQueues = this.dQueues.data(queues, d => d.id);
+        this.dQueues.exit().remove();
+
+        const R = RADIUS;
+
+        this.dQueues = this.dQueues
+            .enter().append('path').attr('class', 'queue')
+            .call(this.dragHandler)
+            .merge(this.dQueues)
+            .attr('d', d => `M ${d.position} m 0,${-R} l ${-R},${R} l ${R},${R} l ${R},${-R} Z`);
+    }
+
+    renderPointers(entities) {
+        const R = RADIUS;
+
+        const pointers = entities.filter(d => d.pointer)
+            .map(d => ({
+                ... d,
+                pVis: {
+                    p0: entities[d.pointer.source].position.add(vec(-0.8 * R, -0.8 * R)),
+                    p1: entities[d.pointer.target].position.add(vec(1.2 * R, -1.2 * R))
+                }
+            }));
+
+        function getPath(d) {
+            const midpoint = d.pVis.p0.add(d.pVis.p1).muln(0.5);
+            return `M ${d.pVis.p0}
+                Q ${midpoint.add(vec(0, -1.5 * GAP))}
+                ${d.pVis.p1}`;
+        }
+
+        this.dPointers = this.dPointers.data(pointers, d => d.id);
+        this.dPointers.exit().remove();
+
+        this.dPointers = this.dPointers
+            .enter().append('path').attr('class', 'pointer')
+            .merge(this.dPointers)
+            .attr('d', getPath);
     }
 }
