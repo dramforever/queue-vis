@@ -55,6 +55,7 @@ svg {
 
 .pointer {
     stroke: black;
+    stroke-dasharray: 10px 4px;
     fill: none;
     stroke-width: 2px;
     marker-end: url(#end-arrow);
