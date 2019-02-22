@@ -32,16 +32,8 @@ export function getJunctionConstraints() {
             gap: GAP,
             left: this.link.source,
             right: this.link.target
-        },
-        {
-            type: 'alignment',
-            axis: 'x',
-            offsets: [
-                { node: this.link.source, offset: 0 },
-                { node: this.link.target, offset: 0 }
-            ]
         }
-    ]
+    ];
 }
 
 export function makeConnector(store, { source, target, direction }) {
@@ -57,15 +49,17 @@ export function makeConnector(store, { source, target, direction }) {
 }
 
 export function checkMakeConnector(store, source, target, dir) {
-    return (target !== null) && makeConnector(store, {
-        source, target, direction: dir
-    }) || null;
+    return target === null
+        ? null
+        : makeConnector(store, {
+            source, target, direction: dir
+        });
 }
 
 export function makeNode(store, { label, direction, next = null, r1 = null, r2 = null }) {
     const node = store.reserve();
     const nextConn = checkMakeConnector(store, node, next, direction);
-    const junction = (r1 !== null || r2 !== null) && store.reserve() || null;
+    const junction = (r1 === null && r2 === null) ? null : store.reserve();
     const r1Conn = checkMakeConnector(store, junction, r1, 'right');
     const r2Conn = checkMakeConnector(store, junction, r2, 'left');
 
@@ -100,14 +94,17 @@ export function makeQueue(store, { l, r, s }) {
     const queue = store.reserve();
     const lConn = checkMakeConnector(store, queue, l, 'left');
     const rConn = checkMakeConnector(store, queue, r, 'right');
-    const sPtr = (s !== null) && store.push({
-        pointer: {
-            source: queue,
-            target: s
-        }
-    }) || null;
+    const sPtr = s === null
+        ? null
+        : store.push({
+            pointer: {
+                source: queue,
+                target: s
+            }
+        });
+
     store.set(queue, {
-        position: vec(300, 300),
+        position: vec(800, 200),
         queue: {
             l: lConn,
             r: rConn,

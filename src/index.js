@@ -1,10 +1,12 @@
 import * as d3 from 'd3';
 import * as cola from 'webcola';
 
-import { vec } from './vector';
 import { Store } from './store';
 import { View } from './view';
 import { makeNode, makeQueue } from './models';
+
+import * as algo from './algo';
+import { vec } from './vector';
 
 const d3cola = cola.d3adaptor(d3);
 
@@ -22,12 +24,13 @@ const view = new View(svg, dragHandler);
 const store = new Store();
 
 d3cola
+    .linkDistance(30)
     .handleDisconnected(false)
     .on('tick', () => view.render(store.entities));
 
 window.onresize = () => {
     const { width, height } = svg.node().getBoundingClientRect()
-    d3cola.size([ width, height ]);
+    d3cola.size([ width, height ]).start();
 }
 
 window.onresize();
@@ -49,22 +52,22 @@ function arrayToList(values, direction, next = null) {
     return prevNode;
 }
 
-const r1n = arrayToList([ 1, 2, 3 ], 'right');
-const r2n = arrayToList([ 7, 8, 9 ], 'left');
+const r1n = arrayToList([ 8, 9, 10, 11, 12 ], 'right');
+const r2n = arrayToList([ 15, 14, 13 ], 'left');
 
-const m = arrayToList([ 10, 20, 30 ], 'left');
+const m = arrayToList([ 7, 6, 5 ], 'left');
 
 const q = makeNode(store, {
-    label: 'x',
+    label: '4',
     direction: 'left',
     next: m,
     r1: r1n,
     r2: r2n
 })
 
-const n = arrayToList([ 60, 70, 80 ], 'left', q)
+const n = arrayToList([ 3, 2, 1 ], 'left', q)
 
-const p = arrayToList([ 33, 44, 55, 66 ], 'right')
+const p = arrayToList([ 16, 17, 18, 19 ], 'right')
 
 makeQueue(store, { l: n, r: p, s: q });
 
@@ -80,6 +83,7 @@ function updateCola() {
     d3cola
         .nodes(colaNodes)
         .links(colaLinks)
+        .constraints([])
         .start();
 
     const colaConstraints = store.entities.flatMap(d => d.getConstraints ? d.getConstraints() : []).map(d => {
@@ -106,4 +110,34 @@ function updateCola() {
 
 updateCola();
 
-Object.assign(window, { store, updateCola, arrayToList })
+Object.assign(window, { store, updateCola, arrayToList, algo, vec });
+
+const initial = store.revision();
+
+const revs = [ ];
+
+for (let i = 0; i < 4; i ++) {
+    for (const _ of algo.stepQueue(store, 37))
+        revs.push(store.revision());
+}
+
+store.toRevision(initial);
+
+(async () => {
+    const delay = (t) =>
+        new Promise((res, _rej) => setTimeout(res, t));
+
+    function to(rev) {
+        store.toRevision(rev);
+        updateCola();
+    }
+    while(true) {
+        to(initial)
+        await delay(3000);
+        for (const rev of revs) {
+            to(rev);
+            await delay(1000);
+        }
+        await delay(3000);
+    }
+})()
