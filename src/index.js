@@ -118,7 +118,8 @@ const revs = [ ];
 
 for (let i = 0; i < 4; i ++) {
     for (const _ of algo.stepQueue(store, 37))
-        revs.push(store.revision());
+        revs.push([ store.revision(), 1000 ]);
+    revs.push([ store.revision(), 2000 ]);
 }
 
 store.toRevision(initial);
@@ -134,9 +135,9 @@ store.toRevision(initial);
     while(true) {
         to(initial)
         await delay(3000);
-        for (const rev of revs) {
+        for (const [ rev, del ] of revs) {
             to(rev);
-            await delay(1000);
+            await delay(del);
         }
         await delay(3000);
     }
