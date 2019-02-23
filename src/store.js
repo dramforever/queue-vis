@@ -45,6 +45,16 @@ export class Store {
         this.forwardStep();
     }
 
+    update(index, key, to) {
+        this.set(index, {
+            ... this.entities[index],
+            [key]: {
+                ... this.entities[index][key],
+                ... to
+            }
+        });
+    }
+
     push(value) {
         const ix = this.reserve();
         this.set(ix, value);

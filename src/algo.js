@@ -16,45 +16,25 @@ export function* stepJunction(store, junction) {
     });
 
     if (r2 === null) {
-        store.set(junction, {
-            ... store.entities[junction],
-            junction: {
-                r1: store.entities[junction].junction.r1,
-                r2: makeConnector(store, {
-                    source: junction,
-                    target: r2NewNode,
-                    direction: 'left'
-                })
-            }
-        })
-    } else {
-        store.set(r2, {
-            ... store.entities[r2],
-            link: {
+        store.update(junction, 'junction', {
+            r2: makeConnector(store, {
                 source: junction,
-                target: r2NewNode
-            }
+                target: r2NewNode,
+                direction: 'left'
+            })
         });
+    } else {
+        store.update(r2, 'link', { target: r2NewNode });
     }
 
     yield;
 
     if (r1Node.next === null) {
         store.set(r1, {});
-        store.set(junction, {
-            ... store.entities[junction],
-            junction: {
-                ... store.entities[junction].junction,
-                r1: null
-            }
-        })
+        store.update(junction, 'junction', { r1: null });
     } else {
-        store.set(r1, {
-            ... store.entities[r1],
-            link: {
-                source: junction,
-                target: store.entities[r1Node.next].link.target
-            }
+        store.update(r1, 'link', {
+            target: store.entities[r1Node.next].link.target
         });
     }
 
@@ -87,55 +67,22 @@ export function* stepNode(store, node) {
             }
         });
 
-        store.set(snode.next, {
-            ... store.entities[snode.next],
-            link: {
-                source: node,
-                target: newNextNode
-            }
-        });
+        store.update(snode.next, 'link', { target: newNextNode });
 
         yield;
 
-        store.set(snode.junction, {
-            ... store.entities[snode.junction],
-            link: {
-                ... store.entities[snode.junction].link,
-                source: newNextNode
-            }
-        });
-
-        store.set(node, {
-            ... store.entities[node],
-            node: {
-                ... snode,
-                junction: null
-            }
-        });
+        store.update(snode.junction, 'link', { source: newNextNode });
+        store.update(node, 'node', { junction: null });
 
         yield;
     } else {
         yield* stepJunction(store, snode.junction);
-
         yield* stepJunction(store, snode.junction);
 
         const sjunction = store.entities[snode.junction].junction;
 
-        store.set(sjunction.r2, {
-            ... store.entities[sjunction.r2],
-            link: {
-                target: store.entities[sjunction.r2].link.target,
-                source: node,
-            }
-        });
-
-        store.set(node, {
-            ... store.entities[node],
-            node: {
-                ... snode,
-                next: sjunction.r2
-            }
-        })
+        store.update(sjunction.r2, 'link', { source: node });
+        store.update(node, 'node', { next: sjunction.r2 });
 
         store.set(snode.junction, {});
 
@@ -154,23 +101,11 @@ export function* stepQueue(store, queue) {
 
     const starget = store.entities[target].node;
     if (starget.next === null) {
-        store.set(queue, {
-            ... store.entities[queue],
-            queue: {
-                ... store.entities[queue].queue,
-                s: null
-            }
-        });
+        store.update(queue, 'queue', { s: null });
         store.set(ptr, {});
     } else {
         const next = store.entities[starget.next].link.target;
-        store.set(ptr, {
-            ... store.entities[ptr],
-            pointer: {
-                source: queue,
-                target: next
-            }
-        });
+        store.update(ptr, 'pointer', { target: next });
     }
     yield;
 }
