@@ -19,7 +19,7 @@ export function* stepJunction(store, junction) {
         store.set(junction, {
             ... store.entities[junction],
             junction: {
-                ... store.entities[junction].r1,
+                r1: store.entities[junction].junction.r1,
                 r2: makeConnector(store, {
                     source: junction,
                     target: r2NewNode,
