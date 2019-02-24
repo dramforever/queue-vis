@@ -1,4 +1,4 @@
-import { makeNode, makeConnector } from "./models";
+import { makeNode, makeConnector, makeQueue } from "./models";
 import { GAP } from "./consts";
 import { vec } from "./vector";
 
@@ -90,22 +90,106 @@ export function* stepNode(store, node) {
     }
 }
 
-export function* stepQueue(store, queue) {
-    const ptr = store.entities[queue].queue.s;
-
-    if (ptr === null) return;
-
-    const target = store.entities[ptr].pointer.target;
-
-    yield* stepNode(store, target);
-
-    const starget = store.entities[target].node;
-    if (starget.next === null) {
-        store.update(queue, 'queue', { s: null });
-        store.set(ptr, {});
-    } else {
-        const next = store.entities[starget.next].link.target;
-        store.update(ptr, 'pointer', { target: next });
+function* pre(store, queue) {
+    const squeue = store.entities[queue].queue;
+    if (squeue.s !== null) {
+        const cur = store.entities[squeue.s].pointer.target;
+        yield* stepNode(store, cur);
     }
+}
+
+function createLazy(store, x, y) {
+    if (x === null) {
+        return y;
+    } else {
+        const snode = store.entities[x].node;
+        return makeNode(store, {
+            label: snode.label,
+            next: snode.next === null ? null : store.entities[snode.next].link.target,
+            direction: 'left',
+            r1: y,
+            r2: null
+        })
+    }
+}
+
+function rebuild(store, l, r, queue) {
+    const squeue = store.entities[queue].queue;
+    const s0 = squeue.s === null ? null : store.entities[squeue.s].pointer.target;
+    if (s0 === null) {
+        const il = createLazy(store, l, r);
+        return makeQueue(store, { l: il, r: null, s: il });
+    } else {
+        const scur = store.entities[s0].node;
+        const res = makeQueue(store, {
+            l, r,
+            s: scur.next === null ? null : store.entities[scur.next].link.target
+        });
+        return res;
+    }
+}
+
+export function* push(store, out, queue, label) {
+    const squeue = store.entities[queue].queue;
+    yield* pre(store, queue);
+    const ir = makeNode(store, {
+        label,
+        direction: 'right',
+        next: squeue.r === null ? null : store.entities[squeue.r].link.target
+    });
+    out.queue = rebuild(
+        store,
+        store.entities[squeue.l].link.target,
+        ir,
+        queue
+    );
+}
+
+export function* pop(store, out, queue) {
+    const squeue = store.entities[queue].queue;
+    if (squeue.l == null) {
+        out.success = false;
+        return;
+    }
+    yield* pre(store, queue);
+    const snode = store.entities[store.entities[squeue.l].link.target].node;
+    out.label = snode.label;
+    const next = snode.next === null ? null : store.entities[snode.next].link.target;
+    out.queue = rebuild(
+        store,
+        next,
+        store.entities[squeue.r].link.target,
+        queue
+    );
+}
+
+export function* replaceQueue(store, q0, q1) {
+    store.set(q0, {
+        ... store.entities[q0],
+        getConstraints: () => ({
+            axis: 'y',
+            left: q0,
+            right: q1,
+            gap: GAP
+        })
+    });
+
     yield;
+
+    const sq0 = store.entities[q0].queue;
+    store.set(q0, {});
+    for (const name of 'l r s'.split(' '))
+        if (sq0[name] !== null) store.set(sq0[name], {});
+
+    yield;
+}
+
+export function* pushReplace(store, out, queue, label) {
+    yield* push(store, out, queue, label);
+    yield* replaceQueue(store, queue, out.queue);
+}
+
+export function* popReplace(store, out, queue) {
+    yield* pop(store, out, queue);
+    yield* replaceQueue(store, queue, out.queue);
 }

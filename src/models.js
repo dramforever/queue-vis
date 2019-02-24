@@ -111,5 +111,7 @@ export function makeQueue(store, { l, r, s }) {
             s: sPtr
         }
     });
+
+    return queue;
 }
 

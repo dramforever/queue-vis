@@ -52,10 +52,10 @@ function arrayToList(values, direction, next = null) {
     return prevNode;
 }
 
-const r1n = arrayToList([ 8, 9, 10, 11, 12 ], 'right');
-const r2n = arrayToList([ 15, 14, 13 ], 'left');
+const r1n = arrayToList([ 8, 9, 10 ], 'right');
+const r2n = arrayToList([ 15 ], 'left');
 
-const m = arrayToList([ 7, 6, 5 ], 'left');
+const m = arrayToList([ 7 ], 'left');
 
 const q = makeNode(store, {
     label: '4',
@@ -65,17 +65,18 @@ const q = makeNode(store, {
     r2: r2n
 })
 
-const n = arrayToList([ 3, 2, 1 ], 'left', q)
+const n = arrayToList([ 1 ], 'left', q)
 
-const p = arrayToList([ 16, 17, 18, 19 ], 'right')
+const p = arrayToList([ 16 ], 'right')
 
-makeQueue(store, { l: n, r: p, s: q });
+const thequeue = makeQueue(store, { l: n, r: p, s: q });
 
 view.render(store.entities)
 
 function updateCola() {
     const colaNodes = store.entities.map(d => d.position).filter(d => d);
     const colaLinks = store.entities.filter(d => d.link).map(d => ({
+        d,
         source: store.entities[d.link.source].position,
         target: store.entities[d.link.target].position
     }));
@@ -108,37 +109,26 @@ function updateCola() {
         .start();
 };
 
+window.g = { store, updateCola, arrayToList, algo, vec, thequeue };
+
 updateCola();
 
-Object.assign(window, { store, updateCola, arrayToList, algo, vec });
+(async function() {
+    const delay = (t) => new Promise((resolve, _reject) => setTimeout(resolve, t));
+    const out = { queue: thequeue };
+    while (true) {
+        const label = Math.random().toString()[2];
+        const initial = store.revision(), revs = [];
 
-const initial = store.revision();
+        for (const _ of algo.pushReplace(store, out, out.queue, label))
+            revs.push(store.revision());
 
-const revs = [ ];
+        store.toRevision(initial);
 
-for (let i = 0; i < 4; i ++) {
-    for (const _ of algo.stepQueue(store, 37))
-        revs.push([ store.revision(), 1000 ]);
-    revs.push([ store.revision(), 2000 ]);
-}
-
-store.toRevision(initial);
-
-(async () => {
-    const delay = (t) =>
-        new Promise((res, _rej) => setTimeout(res, t));
-
-    function to(rev) {
-        store.toRevision(rev);
-        updateCola();
-    }
-    while(true) {
-        to(initial)
-        await delay(3000);
-        for (const [ rev, del ] of revs) {
-            to(rev);
-            await delay(del);
+        for (const rev of revs) {
+            await delay(500);
+            store.toRevision(rev);
+            updateCola();
         }
-        await delay(3000);
     }
-})()
+})();
