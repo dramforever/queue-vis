@@ -139,7 +139,7 @@ export function* push(store, out, queue, label) {
     });
     out.queue = rebuild(
         store,
-        store.entities[squeue.l].link.target,
+        squeue.l === null ? null : store.entities[squeue.l].link.target,
         ir,
         queue
     );
@@ -153,12 +153,13 @@ export function* pop(store, out, queue) {
     }
     yield* pre(store, queue);
     const snode = store.entities[store.entities[squeue.l].link.target].node;
+    out.success = true;
     out.label = snode.label;
     const next = snode.next === null ? null : store.entities[snode.next].link.target;
     out.queue = rebuild(
         store,
         next,
-        store.entities[squeue.r].link.target,
+        squeue.r === null ? null : store.entities[squeue.r].link.target,
         queue
     );
 }
@@ -191,5 +192,5 @@ export function* pushReplace(store, out, queue, label) {
 
 export function* popReplace(store, out, queue) {
     yield* pop(store, out, queue);
-    yield* replaceQueue(store, queue, out.queue);
+    if (out.success) yield* replaceQueue(store, queue, out.queue);
 }
