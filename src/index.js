@@ -52,24 +52,7 @@ function arrayToList(values, direction, next = null) {
     return prevNode;
 }
 
-const r1n = arrayToList([ 8, 9, 10 ], 'right');
-const r2n = arrayToList([ 15 ], 'left');
-
-const m = arrayToList([ 7 ], 'left');
-
-const q = makeNode(store, {
-    label: '4',
-    direction: 'left',
-    next: m,
-    r1: r1n,
-    r2: r2n
-})
-
-const n = arrayToList([ 1 ], 'left', q)
-
-const p = arrayToList([ 16 ], 'right')
-
-const thequeue = makeQueue(store, { l: n, r: p, s: q });
+const thequeue = makeQueue(store, { l: null, r: null, s: null });
 
 view.render(store.entities)
 
@@ -115,12 +98,19 @@ updateCola();
 
 (async function() {
     const delay = (t) => new Promise((resolve, _reject) => setTimeout(resolve, t));
-    const out = { queue: thequeue };
-    while (true) {
+    const out = { queue: thequeue, success: true };
+    let count = 0;
+    while (out.success) {
         const label = Math.random().toString()[2];
         const initial = store.revision(), revs = [];
 
-        for (const _ of algo.pushReplace(store, out, out.queue, label))
+        const op = store.entities[out.queue].queue.l === null || Math.random() < 0.5
+            ? algo.pushReplace(store, out, out.queue, label)
+            : algo.popReplace(store, out, out.queue);
+
+        count ++;
+
+        for (const _ of op)
             revs.push(store.revision());
 
         store.toRevision(initial);
