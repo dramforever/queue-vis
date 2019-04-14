@@ -129,7 +129,7 @@ function rebuild(store, l, r, queue) {
     }
 }
 
-export function* push(store, out, queue, label) {
+export function* push(store, queue, label) {
     const squeue = store.entities[queue].queue;
     yield* pre(store, queue);
     const ir = makeNode(store, {
@@ -137,31 +137,37 @@ export function* push(store, out, queue, label) {
         direction: 'right',
         next: squeue.r === null ? null : store.entities[squeue.r].link.target
     });
-    out.queue = rebuild(
-        store,
-        squeue.l === null ? null : store.entities[squeue.l].link.target,
-        ir,
-        queue
-    );
+    return {
+        queue: rebuild(
+            store,
+            squeue.l === null ? null : store.entities[squeue.l].link.target,
+            ir,
+            queue
+        )
+    };
 }
 
-export function* pop(store, out, queue) {
+export function* pop(store, queue) {
     const squeue = store.entities[queue].queue;
     if (squeue.l == null) {
-        out.success = false;
-        return;
+        return { success: false };
     }
     yield* pre(store, queue);
     const snode = store.entities[store.entities[squeue.l].link.target].node;
-    out.success = true;
-    out.label = snode.label;
+
+    const label = snode.label;
     const next = snode.next === null ? null : store.entities[snode.next].link.target;
-    out.queue = rebuild(
+    const newQueue = rebuild(
         store,
         next,
         squeue.r === null ? null : store.entities[squeue.r].link.target,
         queue
     );
+    return {
+        success: true,
+        label,
+        queue: newQueue
+    }
 }
 
 export function* replaceQueue(store, q0, q1) {
@@ -185,12 +191,18 @@ export function* replaceQueue(store, q0, q1) {
     yield;
 }
 
-export function* pushReplace(store, out, queue, label) {
-    yield* push(store, out, queue, label);
-    yield* replaceQueue(store, queue, out.queue);
+export function* pushReplace(store, queue, label) {
+    const res = yield* push(store, queue, label);
+    yield* replaceQueue(store, queue, res.queue);
+    return res;
 }
 
-export function* popReplace(store, out, queue) {
-    yield* pop(store, out, queue);
-    if (out.success) yield* replaceQueue(store, queue, out.queue);
+export function* popReplace(store, queue) {
+    const res = yield* pop(store, queue);
+    if (res.success) yield* replaceQueue(store, queue, res.queue);
+    return res;
+}
+
+export function* wrap(iter, out) {
+    Object.assign(out, yield* iter);
 }

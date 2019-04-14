@@ -105,8 +105,8 @@ updateCola();
         const initial = store.revision(), revs = [];
 
         const op = store.entities[out.queue].queue.l === null || Math.random() < 0.5
-            ? algo.pushReplace(store, out, out.queue, label)
-            : algo.popReplace(store, out, out.queue);
+            ? algo.wrap(algo.pushReplace(store, out.queue, label), out)
+            : algo.wrap(algo.popReplace(store, out.queue), out);
 
         count ++;
 
