@@ -57,6 +57,8 @@ export function checkMakeConnector(store, source, target, dir) {
 }
 
 export function makeNode(store, { label, direction, next = null, r1 = null, r2 = null }) {
+    const addWidthHeight = (x) => Object.assign(x, { width: 30, height: 30 });
+
     const node = store.reserve();
     const nextConn = checkMakeConnector(store, node, next, direction);
     const junction = (r1 === null && r2 === null) ? null : store.reserve();
@@ -65,7 +67,7 @@ export function makeNode(store, { label, direction, next = null, r1 = null, r2 =
 
     if (junction !== null)
         store.set(junction, {
-            position: vec(600, 200),
+            position: addWidthHeight(vec(600, 200)),
             link: {
                 source: node,
                 target: junction,
@@ -79,7 +81,7 @@ export function makeNode(store, { label, direction, next = null, r1 = null, r2 =
         });
 
     store.set(node, {
-        position: vec(600, 200),
+        position: addWidthHeight(vec(600, 200)),
         node: {
             label,
             next: nextConn,
@@ -114,4 +116,3 @@ export function makeQueue(store, { l, r, s }) {
 
     return queue;
 }
-

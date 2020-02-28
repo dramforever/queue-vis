@@ -26,6 +26,7 @@ const store = new Store();
 d3cola
     .linkDistance(30)
     .handleDisconnected(false)
+    .avoidOverlaps(true)
     .on('tick', () => view.render(store.entities));
 
 window.onresize = () => {
@@ -65,6 +66,8 @@ function updateCola() {
     }));
 
     d3cola
+        // Workaround for https://github.com/tgdwyer/WebCola/issues/166
+        .groups([])
         .nodes(colaNodes)
         .links(colaLinks)
         .constraints([])
